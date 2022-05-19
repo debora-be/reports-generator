@@ -16,6 +16,8 @@ defmodule ReportsGenerator do
     "sushi"
   ]
 
+  @options ["foods", "users"]
+
   @doc """
   Given the file path, build() parses it to return the amount spent (sum_values()) for each client with report_acc()
   """
@@ -30,7 +32,11 @@ defmodule ReportsGenerator do
   iex(2)> "report_complete.csv" |> ReportsGenerator.build() |> ReportsGenerator.fetch_higher_cost()
   {"13", 282953}
   """
-  def fetch_higher_cost(report), do: Enum.max_by(report, fn {_key, value} -> value end)
+  def fetch_higher_cost(report, option) when option in @options do
+    {:ok, Enum.max_by(report[option], fn {_key, value} -> value end)}
+  end
+
+  def fetch_higher_cost(_report, _option), do: {:error, "invalid option"}
 
   defp sum_values([id, food_name, price], %{"foods" => foods, "users" => users} = report) do
     users = Map.put(users, id, users[id] + price)
