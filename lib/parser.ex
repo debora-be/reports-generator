@@ -18,5 +18,4 @@ defmodule ReportsGenerator.Parser do
     |> String.split(",")
     |> List.update_at(2, &String.to_integer/1)
   end
-
 end
