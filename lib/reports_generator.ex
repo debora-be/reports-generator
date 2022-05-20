@@ -19,12 +19,22 @@ defmodule ReportsGenerator do
   @options ["foods", "users"]
 
   @doc """
-  Given the file path, build() parses it to return the amount spent (sum_values()) for each client with report_acc()
+  Given the file name, build() parses the data
   """
   def build(filename) do
     filename
     |> Parser.parse_file()
     |> Enum.reduce(report_acc(), fn line, report -> sum_values(line, report) end)
+  end
+
+  @doc """
+  Given many file names, build_from_many() streams, parses the data and sums the values. Exemple of a call:
+  iex(4)> ReportsGenerator.build_from_many(["report_1.csv", "report_2.csv", "report_3.csv"])
+  """
+  def build_from_many(filenames) do
+    filenames
+    |> Task.async_stream(&build &1)
+    |> Enum.reduce(report_acc(), fn {:ok, result}, report -> sum_reports(report, result) end)
   end
 
   @doc """
@@ -37,6 +47,20 @@ defmodule ReportsGenerator do
   end
 
   def fetch_higher_cost(_report, _option), do: {:error, "invalid option"}
+
+  defp sum_reports(%{"foods" => foods1, "users" => users1}, %{
+    "foods" => foods2,
+    "users" => users2
+  }) do
+    foods = merge_maps(foods1, foods2)
+    users = merge_maps(users1, users2)
+
+    %{"foods" => foods, "users" => users}
+  end
+
+  defp merge_maps(map1, map2) do
+    Map.merge(map1, map2, fn _key, value1, value2 -> value1 + value2 end)
+  end
 
   defp sum_values([id, food_name, price], %{"foods" => foods, "users" => users} = report) do
     users = Map.put(users, id, users[id] + price)
