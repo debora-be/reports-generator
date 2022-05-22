@@ -31,10 +31,17 @@ defmodule ReportsGenerator do
   Given many file names, build_from_many() streams, parses the data and sums the values. Exemple of a call:
   iex(4)> ReportsGenerator.build_from_many(["report_1.csv", "report_2.csv", "report_3.csv"])
   """
+  def build_from_many(filenames) when not is_list(filenames) do
+    {:error, "Please provide a list of strings"}
+  end
+
   def build_from_many(filenames) do
-    filenames
-    |> Task.async_stream(&build &1)
-    |> Enum.reduce(report_acc(), fn {:ok, result}, report -> sum_reports(report, result) end)
+    result =
+      filenames
+      |> Task.async_stream(&build(&1))
+      |> Enum.reduce(report_acc(), fn {:ok, result}, report -> sum_reports(report, result) end)
+
+    {:ok, result}
   end
 
   @doc """
@@ -49,9 +56,9 @@ defmodule ReportsGenerator do
   def fetch_higher_cost(_report, _option), do: {:error, "invalid option"}
 
   defp sum_reports(%{"foods" => foods1, "users" => users1}, %{
-    "foods" => foods2,
-    "users" => users2
-  }) do
+         "foods" => foods2,
+         "users" => users2
+       }) do
     foods = merge_maps(foods1, foods2)
     users = merge_maps(users1, users2)
 
